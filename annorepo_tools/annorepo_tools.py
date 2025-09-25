@@ -5,9 +5,7 @@ from collections import Counter
 
 import progressbar
 from annorepo.client import AnnoRepoClient, ContainerAdapter
-
-import untanngle.utils as uu
-
+from annorepo_tools.utils import chunk_list
 
 def get_etag(ca: ContainerAdapter) -> str:
     return ca.read().etag
@@ -108,7 +106,7 @@ def process_web_annotations_file(
     number_of_annotations = len(annotation_list)
     print(f"  {number_of_annotations} annotations found.")
     chunk_size = 500
-    chunked_annotations = uu.chunk_list(annotation_list, chunk_size)
+    chunked_annotations = chunk_list(annotation_list, chunk_size)
     number_of_chunks = len(chunked_annotations)
     print(
         f"  uploading {number_of_annotations} annotations to {annorepo_base_url}/w3c/{container_id}"

@@ -4,8 +4,8 @@ from argparse import Namespace
 
 from loguru import logger
 
-import untanngle.annorepo_tools as ar
-from untanngle.utils import trim_trailing_slash
+import annorepo_tools.annorepo_tools as ar
+from annorepo_tools.utils import trim_trailing_slash
 
 
 @logger.catch()

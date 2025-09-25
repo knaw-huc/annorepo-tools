@@ -1,0 +1,36 @@
+[project]
+name = "annorepo-tools"
+version = "0.1.0"
+description = "Tools for communicating with Annorepo"
+authors = [
+    {name = "Bram Buitendijk", email = "bram.buitendijk@di.huc.knaw.nl"},
+    {name = "Maarten van Gompel", email = "proycon@anaproy.nl"}
+]
+maintainers = [
+    {name = "Bram Buitendijk", email = "bram.buitendijk@di.huc.knaw.nl"}
+]
+dynamic = ["dependencies"]
+readme = "README.md"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+]
+license = "Apache-2.0"
+requires-python = ">= 3.9"
+
+[project.urls]
+Repository = "https://github.com/knaw-huc/annorepo-tools.git"
+
+[project.scripts]
+upload-web-annotations = "annorepo_tools.upload_web_annotations:main"
+
+[tool.setuptools]
+packages = [ "annorepo_tools" ]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+[build-system]
+requires = ["setuptools >= 62.6"]
+build-backend = "setuptools.build_meta"
+
