@@ -99,7 +99,7 @@ def process_web_annotations_file(
     if input_file.endswith(".jsonl"):
         annotation_list = []
         with open(input_file,'r',encoding='utf-8') as f:
-            for line in f.read():
+            for line in f.readlines():
                 annotation_list.append(json.loads(line))
     else:
         with open(input_file) as f:
