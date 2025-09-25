@@ -84,7 +84,7 @@ def add_indexes(ca):
         }
     )
     ca.create_compound_index({"body.id": "hashed"})
-    ca.create_compound_index({"body.type": "hashed"})
+    ca.create_compound_index({"body.type": "ascending"})
 
 
 def process_web_annotations_file(
