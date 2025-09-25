@@ -2,6 +2,7 @@ import glob
 import json
 import os
 from collections import Counter
+from typing import Optional
 
 import progressbar
 from annorepo.client import AnnoRepoClient, ContainerAdapter
@@ -19,7 +20,7 @@ def upload(
         container_id: str,
         input_paths: list[str],
         container_label: str = 'A Container for Web Annotations',
-        api_key: str = None,
+        api_key: Optional[str] = None,
         overwrite_container: bool = False,
         show_progress: bool = False
 ):
