@@ -15,7 +15,7 @@ def main():
                     "(which will be created if it does not already exist)",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("input",
-                        help="The json file containing the list of annotations, or a directory containing these json files",
+                        help="The json or jsonl file containing the list of annotations, or a directory containing these json/jsonl files",
                         nargs="*",
                         type=str)
     parser.add_argument("-a",

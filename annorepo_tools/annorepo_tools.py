@@ -96,8 +96,14 @@ def process_web_annotations_file(
         show_progress: bool
 ):
     print(f"reading {input_file}...")
-    with open(input_file) as f:
-        annotation_list = json.load(f)
+    if input_file.endswith(".jsonl"):
+        annotation_list = []
+        with open(input_file,'r',encoding='utf-8') as f:
+            for line in f.read():
+                annotation_list.append(json.loads(line))
+    else:
+        with open(input_file) as f:
+            annotation_list = json.load(f)
     for a in [a for a in annotation_list if 'body' in a and 'type' in a['body']]:
         body_type = a['body']['type']
         # ic(body_type)
