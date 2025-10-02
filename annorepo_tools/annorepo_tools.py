@@ -1,6 +1,7 @@
 import glob
 import json
 import os
+import sys
 from collections import Counter
 from typing import Optional
 
@@ -123,7 +124,11 @@ def process_web_annotations_file(
         if show_progress:
             print(f"    chunk ({p + 1}/{number_of_chunks})", end='\r')
         # ic(chunk)
-        annotation_ids.extend(ar.add_annotations(container_id, chunk))
+        try:
+            annotation_ids.extend(ar.add_annotations(container_id, chunk))
+        except Exception as e:
+            print(f"Error {e} while uploading chunk #{p+1}/{number_of_chunks}: ", json.dumps(chunk,ensure_ascii=False), file=sys.stderr)
+            raise
     print()
     out_path = "/".join(input_file.split("/")[:-1])
     input_file_name_base = input_file.split("/")[-1].replace(".json", "")

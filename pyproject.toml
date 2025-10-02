@@ -23,6 +23,7 @@ Repository = "https://github.com/knaw-huc/annorepo-tools.git"
 
 [project.scripts]
 upload-web-annotations = "annorepo_tools.upload_web_annotations:main"
+consolidate-web-annotations = "annorepo_tools.consolidate_web_annotations:main"
 
 [tool.setuptools]
 packages = [ "annorepo_tools" ]
