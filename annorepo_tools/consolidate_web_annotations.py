@@ -9,13 +9,12 @@ from collections import OrderedDict
 # Note: This script covers a pretty specific use-case (see usage description) that sits between stam 's webannotation export and the upload to annorepo
 #       it merges annotations that have been split between two text variants (original/normalized, or formerly known as logical/physical)
 
-def set_target_type(webannotation: dict, target_type: str, target_prefix: str, length: Optional[int] = None) -> dict:
+def set_target_type(webannotation: dict, target_type: str, length: Optional[int] = None) -> dict:
     if isinstance(webannotation['target'], list):
         for i, target in enumerate(webannotation['target']):
             if length is not None and i >= length:
                 break
-            if isinstance(target,str) and target.startswith(target_prefix):
-                #only process things that were marked for postprocessing
+            if isinstance(target,str):
                 webannotation['target'][i] = {
                     "type": target_type,
                     "source": target[12:]
@@ -29,7 +28,6 @@ def main():
     parser.add_argument("--new-type", action="store", type=str, help="The type of the web annotation body when a secondary annotation was found and merged into a primary one", default="NormalText")
     parser.add_argument("--original-type", action="store", type=str, help="The type of the web annotation body when no secondary annotation was found", default="OriginalText")
     parser.add_argument("--id-suffix", action="store", type=str, help="The ID suffix secondary annotations carry, when compared to the primary ID", default=".normal")
-    parser.add_argument("--target-prefix", action="store", type=str, help="Only operate on webannotation targets that carry this prefix (set to empty string to disable and operate on all webannotation targets)", default="POSTPROCESS:")
     args = parser.parse_args()
 
     passed = 0 
@@ -41,7 +39,7 @@ def main():
         elif line:
             #id-less annotation, nothing to merge, output-as is (blank node) but use the new type
             passed += 1
-            print(json.dumps(set_target_type(webannotation, args.new_type, args.target_prefix), ensure_ascii=False, indent=None))
+            print(json.dumps(set_target_type(webannotation, args.new_type), ensure_ascii=False, indent=None))
 
     merged = 0
     skipped = 0
@@ -59,12 +57,12 @@ def main():
             except KeyError:
                 #no secondary, primary web annotation is already the normal text, call it NormalText
                 passed += 1
-                print(json.dumps(set_target_type(webannotation, args.new_type, args.target_prefix), ensure_ascii=False, indent=None))
+                print(json.dumps(set_target_type(webannotation, args.new_type), ensure_ascii=False, indent=None))
                 continue
             merged += 1
             original_length = len(webannotation['target'])
             for target in secondary['target']:
-                if isinstance(target,str) and target not in webannotation['target'] and target.startswith(args.target_prefix):
+                if isinstance(target,str) and target not in webannotation['target']:
                     #add the normal text
                     webannotation['target'].append(
                         {
@@ -72,7 +70,7 @@ def main():
                             "source": target[12:]
                         })
             #what was there before will be original text
-            webannotation = set_target_type(webannotation, args.original_type, args.target_prefix, original_length)
+            webannotation = set_target_type(webannotation, args.original_type, original_length)
             print(json.dumps(webannotation, ensure_ascii=False, indent=None))
         else:
             potential +=  1
