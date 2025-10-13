@@ -19,8 +19,11 @@ def set_target_type(webannotation: dict, target_type: str, length: Optional[int]
                     "type": target_type,
                     "source": target[12:]
                 }
-    else:
-        raise TypeError("expected target list")
+    elif isinstance(webannotation['target'], dict) and 'source' in webannotation['target']:
+        webannotation['target'] = {
+            "type": target_type,
+            "source": webannotation['target']['source'][12:]
+        }
     return webannotation
 
 def main():
