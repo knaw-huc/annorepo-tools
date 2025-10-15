@@ -17,12 +17,14 @@ def set_target_type(webannotation: dict, target_type: str, length: Optional[int]
             if isinstance(target,str):
                 webannotation['target'][i] = {
                     "type": target_type,
-                    "source": target[12:]
+                    "source": target
                 }
+            elif isinstance(target,dict) and 'source' in target:
+                target['type'] = target_type
     elif isinstance(webannotation['target'], dict) and 'source' in webannotation['target']:
         webannotation['target'] = {
             "type": target_type,
-            "source": webannotation['target']['source'][12:]
+            "source": webannotation['target']['source']
         }
     return webannotation
 
@@ -70,7 +72,7 @@ def main():
                     webannotation['target'].append(
                         {
                             "type": args.new_type,
-                            "source": target[12:]
+                            "source": target
                         })
             #what was there before will be original text
             webannotation = set_target_type(webannotation, args.original_type, original_length)
