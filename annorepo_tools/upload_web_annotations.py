@@ -18,6 +18,12 @@ def main():
                         help="The json or jsonl file containing the list of annotations, or a directory containing these json/jsonl files",
                         nargs="*",
                         type=str)
+    parser.add_argument("-p",
+                        "--pattern",
+                        required=True,
+                        help="Pattern to find files in case a directory was supplied",
+                        default="*.json",
+                        type=str)
     parser.add_argument("-a",
                         "--annorepo-base-url",
                         required=True,
@@ -55,7 +61,8 @@ def main():
             args.container_label,
             api_key=args.api_key,
             overwrite_container=args.overwrite_existing_container,
-            show_progress=True
+            show_progress=True,
+            glob_pattern=args.pattern
         )
     else:
         ar.upload(
@@ -64,7 +71,8 @@ def main():
             args.input,
             api_key=args.api_key,
             overwrite_container=args.overwrite_existing_container,
-            show_progress=True
+            show_progress=True,
+            glob_pattern=args.pattern
         )
 
 

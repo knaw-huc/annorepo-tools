@@ -23,7 +23,8 @@ def upload(
         container_label: str = 'A Container for Web Annotations',
         api_key: Optional[str] = None,
         overwrite_container: bool = False,
-        show_progress: bool = False
+        show_progress: bool = False,
+        glob_pattern = "*.json",
 ):
     ar = AnnoRepoClient(annorepo_base_url, verbose=False, api_key=api_key)
 
@@ -46,7 +47,7 @@ def upload(
     input_files = []
     for p in input_paths:
         if os.path.isdir(p):
-            input_files.extend(glob.glob(f'{p}/*.json'))
+            input_files.extend(glob.glob(f'{p}/{glob_pattern}'))
         else:
             input_files.append(p)
     body_type_counter = Counter()
