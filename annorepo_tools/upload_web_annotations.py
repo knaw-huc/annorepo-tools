@@ -20,7 +20,6 @@ def main():
                         type=str)
     parser.add_argument("-p",
                         "--pattern",
-                        required=True,
                         help="Pattern to find files in case a directory was supplied",
                         default="*.json",
                         type=str)
