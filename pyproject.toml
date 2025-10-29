@@ -1,6 +1,6 @@
 [project]
 name = "annorepo-tools"
-version = "0.1.0"
+version = "0.1.1"
 description = "Tools for communicating with Annorepo"
 authors = [
     {name = "Bram Buitendijk", email = "bram.buitendijk@di.huc.knaw.nl"},

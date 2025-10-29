@@ -5,6 +5,7 @@ import json
 import sys
 from typing import Optional
 from collections import OrderedDict
+from copy import deepcopy
 
 # Note: This script covers a pretty specific use-case (see usage description) that sits between stam 's webannotation export and the upload to annorepo
 #       it merges annotations that have been split between two text variants (original/normalized, or formerly known as logical/physical)
@@ -56,7 +57,7 @@ def main():
                 skipped += 1
                 continue
             try:
-                #find the secondary annotation that we merge into the current (primary) one
+                #find the secondary (e.g. normalized) annotation that we merge into the current (primary) one
                 secondary_id = id + args.id_suffix
                 secondary = webannotations[secondary_id]
             except KeyError:
@@ -68,12 +69,17 @@ def main():
             original_length = len(webannotation['target'])
             for target in secondary['target']:
                 if isinstance(target,str) and target not in webannotation['target']:
-                    #add the normal text
+                    #add the normalized text
                     webannotation['target'].append(
                         {
                             "type": args.new_type,
                             "source": target
                         })
+                elif isinstance(target,dict) and 'selector' in target and target not in webannotation['target']:
+                    newtarget = deepcopy(target)
+                    newtarget['type'] = args.new_type
+                    webannotation['target'].append(newtarget)
+
             #what was there before will be original text
             webannotation = set_target_type(webannotation, args.original_type, original_length)
             print(json.dumps(webannotation, ensure_ascii=False, indent=None))
