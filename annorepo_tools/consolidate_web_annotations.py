@@ -3,12 +3,15 @@
 import argparse
 import json
 import sys
-from typing import Optional
+import glob
+from typing import Optional, Any
 from collections import OrderedDict
 from copy import deepcopy
 
 # Note: This script covers a pretty specific use-case (see usage description) that sits between stam 's webannotation export and the upload to annorepo
 #       it merges annotations that have been split between two text variants (original/normalized, or formerly known as logical/physical)
+#    
+#       additionally, it embeds old-style entities from the apparatus in the webannotations (via the `tei:ref` property). This is only temporary for backward compatibility
 
 def set_target_type(webannotation: dict, target_type: str, length: Optional[int] = None) -> dict:
     if isinstance(webannotation['target'], list):
@@ -29,14 +32,74 @@ def set_target_type(webannotation: dict, target_type: str, length: Optional[int]
         }
     return webannotation
 
+
+#(function by Bram migrated here from un-t-ann-gle)
+def load_entities(path: str) -> dict[str, dict[str, Any]]:
+    """Load entities from the apparatus"""
+    entity_index = {}
+    for data_path in glob.glob(f"{path}/*-entity-dict.json"):
+        #logger.info(f"<= {data_path}")
+        with open(data_path, "r", encoding="utf-8") as f:
+            entity_index.update(json.load(f))
+    for k, v in entity_index.items():
+        if "relation" in v and "ref" in v["relation"]:
+            original_ref = v["relation"]["ref"]
+            ref_key = original_ref.replace(".xml#", "/")
+            if ref_key in entity_index:
+                entity_index[k]["relation"]["ref"] = entity_index[ref_key]
+            else:
+                print(f"WARNING: {k.replace('/', '.xml#')}: no entity found for ref=\"{original_ref}\"",file=sys.stderr)
+        entity_index[k] = rename_entity_type_fields(v)
+    return entity_index
+
+#(function by Bram migrated here from un-t-ann-gle)
+def rename_entity_type_fields(d):
+    if isinstance(d, dict):
+        new_dict = {}
+        for key, value in d.items():
+            new_key = "tei:type" if key == "type" else key
+            new_dict[new_key] = rename_entity_type_fields(value)
+        return new_dict
+    elif isinstance(d, list):
+        return [rename_entity_type_fields(item) for item in d]
+    else:
+        return d
+
+#(function by Bram migrated here from un-t-ann-gle)
+def ref_to_entity(entity_index: dict[str, dict[str, Any]], ref: str) -> dict[str, Any]:
+    key = ref.replace('.xml#', '/')
+    if key in entity_index:
+        return entity_index[key]
+    else:
+        print(f"WARNING: no entity found for reference {ref}", file=sys.stderr)
+        return {ref: None}
+
+def resolve_refs(data: dict[str,Any], entity_index: dict[str, dict[str, Any]]) -> int:
+    #modifies dict in-place
+    entities = 0
+    for key, value in data.items():
+        if key == "tei:ref" and isinstance(value, str):
+            entities += 1
+            data['tei:ref'] = ref_to_entity(entity_index, value)
+        elif isinstance(value, dict):
+            entities += resolve_refs(value, entity_index)
+    return entities
+
+
 def main():
     parser = argparse.ArgumentParser(description="Consolidate multiple webannotations, as produced by e.g. stam fromxml, by merging secondary ones into the primary one. This means that what were two annotations in the input, becomes one annotation with multiple targets in the output. This is intended for situations where the annotation body is identical. The script uses standard input and standard output (JSONL)")
     parser.add_argument("--new-type", action="store", type=str, help="The type of the web annotation body when a secondary annotation was found and merged into a primary one", default="NormalText")
     parser.add_argument("--original-type", action="store", type=str, help="The type of the web annotation body when no secondary annotation was found", default="OriginalText")
     parser.add_argument("--id-suffix", action="store", type=str, help="The ID suffix secondary annotations carry, when compared to the primary ID", default=".normal")
+    parser.add_argument("--apparatus-dir", action="store", type=str, help="Directory containing apparatus JSON files. These will be embedded in the web annotations whenever there is an occurrence of `tei:ref`. This is only a TEMPORARY measure for backward compatibility, it results in invalid/unformalised linked data!")
     args = parser.parse_args()
 
+    entity_index = {}
+    if 'apparatus_dir' in args:
+        entity_index = load_entities(args.apparatus_dir)
+
     passed = 0 
+    entities = 0
     webannotations = OrderedDict()
     for line in sys.stdin:
         webannotation = json.loads(line)
@@ -45,7 +108,10 @@ def main():
         elif line:
             #id-less annotation, nothing to merge, output-as is (blank node) but use the new type
             passed += 1
-            print(json.dumps(set_target_type(webannotation, args.new_type), ensure_ascii=False, indent=None))
+            webannotation = set_target_type(webannotation, args.new_type)
+            if entity_index:
+                entities += resolve_refs(webannotation, entity_index)
+            print(json.dumps(webannotation, ensure_ascii=False, indent=None))
 
     merged = 0
     skipped = 0
@@ -63,6 +129,8 @@ def main():
             except KeyError:
                 #no secondary, primary web annotation is already the normal text, call it NormalText
                 passed += 1
+                if entity_index:
+                    entities += resolve_refs(webannotation, entity_index)
                 print(json.dumps(set_target_type(webannotation, args.new_type), ensure_ascii=False, indent=None))
                 continue
             merged += 1
@@ -82,10 +150,14 @@ def main():
 
             #what was there before will be original text
             webannotation = set_target_type(webannotation, args.original_type, original_length)
+            if entity_index:
+                entities += resolve_refs(webannotation, entity_index)
             print(json.dumps(webannotation, ensure_ascii=False, indent=None))
         else:
             potential +=  1
 
+    if entity_index:
+        print(f"Resolved {entities} entities ({len(entity_index)} loaded)",file=sys.stderr)
     print(f"Consolidated {merged} (out of {potential}) annotations, passed {passed}, skipped {skipped}",file=sys.stderr)
 
 if __name__ == "__main__":
