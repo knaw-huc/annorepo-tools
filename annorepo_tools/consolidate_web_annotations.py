@@ -92,6 +92,7 @@ def main():
     parser.add_argument("--original-type", action="store", type=str, help="The type of the web annotation body when no secondary annotation was found", default="OriginalText")
     parser.add_argument("--id-suffix", action="store", type=str, help="The ID suffix secondary annotations carry, when compared to the primary ID", default=".normal")
     parser.add_argument("--apparatus-dir", action="store", type=str, help="Directory containing apparatus JSON files. These will be embedded in the web annotations whenever there is an occurrence of `tei:ref`. This is only a TEMPORARY measure for backward compatibility, it results in invalid/unformalised linked data!")
+    parser.add_argument("--body-id-prefix", action="store", type=str, help="Generate body IDs when absent, using the following prefix followed by a sequence number")
     args = parser.parse_args()
 
     entity_index = {}
@@ -101,8 +102,12 @@ def main():
     passed = 0 
     entities = 0
     webannotations = OrderedDict()
+    body_count = 0
     for line in sys.stdin:
         webannotation = json.loads(line)
+        if 'body_id_prefix' in args and 'body' in webannotation and 'id' not in webannotation['body']:
+            body_count += 1
+            webannotation['body']['id']  = args.body_id_prefix + str(body_count)
         if 'id' in webannotation:
             webannotations[webannotation['id']] = webannotation
         elif line:
