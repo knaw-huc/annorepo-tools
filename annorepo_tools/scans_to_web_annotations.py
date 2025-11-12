@@ -61,7 +61,7 @@ def main():
         print(json.dumps(webannotation, ensure_ascii=False, indent=None))
     print(f"Added scans for {found} of {pages} pages", file=sys.stderr)
 
-def key_variants(input_url: str) -> Generator[str]:
+def key_variants(input_url: str) -> Generator[str,None,None]:
     yield input_url
     noext = ".".join(input_url.split(".")[0:-1])
     if noext:
