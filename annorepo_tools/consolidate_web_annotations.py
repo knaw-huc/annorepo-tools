@@ -87,12 +87,13 @@ def resolve_refs(data: dict[str,Any], entity_index: dict[str, dict[str, Any]]) -
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Consolidate multiple webannotations, as produced by e.g. stam fromxml, by merging secondary ones into the primary one. This means that what were two annotations in the input, becomes one annotation with multiple targets in the output. This is intended for situations where the annotation body is identical. The script uses standard input and standard output (JSONL)")
+    parser = argparse.ArgumentParser(description="Consolidate multiple webannotations, as produced by e.g. stam fromxml, by merging secondary ones into the primary one. This means that what were two annotations in the input, becomes one annotation with multiple targets in the output. This is intended for situations where the annotation body is identical. The script uses standard input and standard output (JSONL). Note that only annotations with identifiers can be merged (with their counterparts carrying a certain ID suffix)! All web annotations passed must describe the same resource")
     parser.add_argument("--new-type", action="store", type=str, help="The type of the web annotation body when a secondary annotation was found and merged into a primary one", default="NormalText")
     parser.add_argument("--original-type", action="store", type=str, help="The type of the web annotation body when no secondary annotation was found", default="OriginalText")
     parser.add_argument("--id-suffix", action="store", type=str, help="The ID suffix secondary annotations carry, when compared to the primary ID", default=".normal")
     parser.add_argument("--apparatus-dir", action="store", type=str, help="Directory containing apparatus JSON files. These will be embedded in the web annotations whenever there is an occurrence of `tei:ref`. This is only a TEMPORARY measure for backward compatibility, it results in invalid/unformalised linked data!")
     parser.add_argument("--body-id-prefix", action="store", type=str, help="Generate body IDs when absent, using the following prefix followed by a sequence number")
+    parser.add_argument("--no-pass", action="store_true", help="Ignore all annotations without IDs, do not pass them through")
     args = parser.parse_args()
 
     entity_index = {}
@@ -102,24 +103,27 @@ def main():
     passed = 0 
     entities = 0
     webannotations = OrderedDict()
+    pass_annotations = []
     body_count = 0
+    has_secondary = False
+    skipped = 0
     for line in sys.stdin:
         webannotation = json.loads(line)
         if 'body_id_prefix' in args and 'body' in webannotation and 'id' not in webannotation['body']:
             body_count += 1
             webannotation['body']['id']  = args.body_id_prefix + str(body_count)
         if 'id' in webannotation:
-            webannotations[webannotation['id']] = webannotation
+            id = webannotation['id']
+            webannotations[id] = webannotation
+            has_secondary = has_secondary or id.endswith(args.id_suffix) #a secondary suffix
         elif line:
-            #id-less annotation, nothing to merge, output-as is (blank node) but use the new type
-            passed += 1
-            webannotation = set_target_type(webannotation, args.new_type)
-            if entity_index:
-                entities += resolve_refs(webannotation, entity_index)
-            print(json.dumps(webannotation, ensure_ascii=False, indent=None))
+            #id-less annotation, nothing to merge
+            if args.no_pass:
+                skipped += 1
+            else:
+                pass_annotations.append(webannotation)
 
     merged = 0
-    skipped = 0
     potential = 0
     for id, webannotation in webannotations.items():
         if not id.endswith(args.id_suffix): #not a secondary suffix
@@ -161,9 +165,17 @@ def main():
         else:
             potential +=  1
 
+    #we output id-less annotations as-is (blank nodes)
+    for webannotation in pass_annotations:
+        #they either have the original type (if a distinction exist in the data), or new type (if there is no such distinction)
+        webannotation = set_target_type(webannotation, args.original_type if has_secondary else args.new_type)
+        if entity_index:
+            entities += resolve_refs(webannotation, entity_index)
+        print(json.dumps(webannotation, ensure_ascii=False, indent=None))
+
     if entity_index:
         print(f"Resolved {entities} entities ({len(entity_index)} loaded)",file=sys.stderr)
-    print(f"Consolidated {merged} (out of {potential}) annotations, passed {passed}, skipped {skipped}",file=sys.stderr)
+    print(f"Consolidated {merged} (out of {potential}) annotations, passed {len(pass_annotations)}, skipped {skipped}",file=sys.stderr)
 
 if __name__ == "__main__":
     main()
