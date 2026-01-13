@@ -79,8 +79,16 @@ def resolve_refs(data: dict[str,Any], entity_index: dict[str, dict[str, Any]]) -
     entities = 0
     for key, value in data.items():
         if key == "tei:ref" and isinstance(value, str):
-            entities += 1
-            data['tei:ref'] = ref_to_entity(entity_index, value)
+            if ' ' in value:
+                data['tei:ref'] = []
+                for value in value.split(' '):
+                    value = value.strip()
+                    if value:
+                        entities += 1
+                        data['tei:ref'].append(ref_to_entity(entity_index, value))
+            else:
+                entities += 1
+                data['tei:ref'] = ref_to_entity(entity_index, value)
         elif isinstance(value, dict):
             entities += resolve_refs(value, entity_index)
     return entities
