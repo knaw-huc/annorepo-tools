@@ -1,4 +1,6 @@
 annorepo-client >= 0.3.2
+jsonpath-ng >= 1.7.0
 loguru >= 0.7.0
+lxml
 progressbar2 >= 4.2.0
-requests >= 2.32.3
+requests >= 2.32.4
