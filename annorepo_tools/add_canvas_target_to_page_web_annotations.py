@@ -89,8 +89,7 @@ def get_target_ids(pagexml_path: str, canvas_data: dict[str, TargetIds]) -> dict
         if url:
             image_labels[surface_id] = url
         else:
-            logger.error(f"No graphic url found for surface_id '{surface_id}'")
-            exit(-1)
+            logger.warning(f"No graphic url found for surface_id '{surface_id}'")
         for zone in surface.iter(f'{{{TEI_NS}}}zone'):
             zone_id = zone.get(XML_ID)
             image_labels[zone_id] = url
@@ -103,8 +102,7 @@ def get_target_ids(pagexml_path: str, canvas_data: dict[str, TargetIds]) -> dict
         if image_label:
             metadata[page_id] = canvas_data[image_label]
         else:
-            logger.error(f"No image_label found for surface_id '{surface_id}'")
-            exit(-1)
+            logger.warning(f"No image_label found for surface_id '{surface_id}'")
     return metadata
 
 
