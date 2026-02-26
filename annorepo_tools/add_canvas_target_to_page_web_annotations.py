@@ -6,7 +6,6 @@ import sys
 from dataclasses import dataclass
 
 import jsonpath_ng
-from icecream import ic
 from loguru import logger
 from lxml import etree
 
@@ -33,7 +32,9 @@ class TargetIds:
 @logger.catch()
 def main():
     parser = argparse.ArgumentParser(
-        description="Adds Canvas targets to `Page` web annotations. Reads JSONL from standard input (one JSON-LD webannotation per line)")
+        description="Adds Canvas and Image targets to `Page` web annotations,"
+                    " based on the manifest and the pagexml."
+                    " Reads JSONL from standard input (one JSON-LD webannotation per line)")
     parser.add_argument("--manifest", action="store", type=str,
                         help="the IIIF manifest file",
                         required=True)
@@ -82,18 +83,28 @@ def get_target_ids(pagexml_path: str, canvas_data: dict[str, TargetIds]) -> dict
 
     image_labels = {}
     for surface in root.iter(f'{{{TEI_NS}}}surface'):
-        xml_id = surface.get(XML_ID)
+        surface_id = surface.get(XML_ID)
         graphic = surface.find(f'{{{TEI_NS}}}graphic')
-        url = graphic.get('url') if graphic is not None else None
-        image_labels[xml_id] = url
-    # ic(image_labels)
+        url = graphic.get('url')
+        if url:
+            image_labels[surface_id] = url
+        else:
+            logger.error(f"No graphic url found for surface_id '{surface_id}'")
+            exit(-1)
+        for zone in surface.iter(f'{{{TEI_NS}}}zone'):
+            zone_id = zone.get(XML_ID)
+            image_labels[zone_id] = url
 
     metadata = {}
     for page in root.iter(f'{{{TEI_NS}}}pb'):
-        xml_id = page.get('{http://www.w3.org/XML/1998/namespace}id')
+        page_id = page.get(XML_ID)
         surface_id = page.get('facs')[1:]
         image_label = image_labels.get(surface_id)
-        metadata[xml_id] = canvas_data[image_label]
+        if image_label:
+            metadata[page_id] = canvas_data[image_label]
+        else:
+            logger.error(f"No image_label found for surface_id '{surface_id}'")
+            exit(-1)
     return metadata
 
 
