@@ -100,7 +100,11 @@ def get_target_ids(pagexml_path: str, canvas_data: dict[str, TargetIds]) -> dict
         surface_id = page.get('facs')[1:]
         image_label = image_labels.get(surface_id)
         if image_label:
-            metadata[page_id] = canvas_data[image_label]
+            if image_label in canvas_data:
+                metadata[page_id] = canvas_data[image_label]
+            else:
+                logger.warning(
+                    f"graphic url '{image_label}' in surface '{surface_id}' has no matching canvas in the manifest.")
         else:
             logger.warning(f"No image_label found for surface_id '{surface_id}'")
     return metadata
