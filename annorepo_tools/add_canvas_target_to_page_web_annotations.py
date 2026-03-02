@@ -45,12 +45,14 @@ def main():
     args = parser.parse_args()
 
     if not os.path.exists(args.manifest):
-        logger.error(f"The manifest file {args.manifest} does not exist.")
-        exit()
+        logger.error(f"The manifest file {args.manifest} does not exist, cannot add targets.")
+        pass_as_is()
+        exit(0)
 
     if not os.path.exists(args.pagexml):
-        logger.error(f"The pagexml file {args.manifest} does not exist.")
-        exit()
+        logger.error(f"The pagexml file {args.manifest} does not exist, cannot add targets.")
+        pass_as_is()
+        exit(0)
 
     canvas_data = read_canvas_data(args.manifest)
     target_ids = get_target_ids(args.pagexml, canvas_data)
@@ -84,6 +86,12 @@ def main():
                     found += 1
         print(json.dumps(webannotation, ensure_ascii=False, indent=None))
     print(f"Added canvas targets for {found} of {pages} pages", file=sys.stderr)
+
+
+def pass_as_is():
+    for line in sys.stdin:
+        webannotation = json.loads(line)
+        print(json.dumps(webannotation, ensure_ascii=False, indent=None))
 
 
 def get_target_ids(pagexml_path: str, canvas_data: dict[str, TargetIds]) -> dict[str, TargetIds]:
