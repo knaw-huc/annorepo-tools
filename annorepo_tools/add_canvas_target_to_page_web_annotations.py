@@ -34,13 +34,13 @@ class TargetIds:
 def main():
     parser = argparse.ArgumentParser(
         description="Adds Canvas and Image targets to `Page` web annotations,"
-                    " based on the manifest and the pagexml."
+                    " based on the manifest and the TEI file."
                     " Reads JSONL from standard input (one JSON-LD webannotation per line)")
     parser.add_argument("--manifest", action="store", type=str,
                         help="the IIIF manifest file",
                         required=True)
-    parser.add_argument("--pagexml", action="store", type=str,
-                        help="the pageXML file",
+    parser.add_argument("--tei", action="store", type=str,
+                        help="the TEI file",
                         required=True)
     args = parser.parse_args()
 
@@ -49,13 +49,13 @@ def main():
         pass_as_is()
         exit(0)
 
-    if not os.path.exists(args.pagexml):
-        logger.error(f"The pagexml file {args.manifest} does not exist, cannot add targets.")
+    if not os.path.exists(args.tei):
+        logger.error(f"The TEI file {args.manifest} does not exist, cannot add targets.")
         pass_as_is()
         exit(0)
 
     canvas_data = read_canvas_data(args.manifest)
-    target_ids = get_target_ids(args.pagexml, canvas_data)
+    target_ids = get_target_ids(args.tei, canvas_data)
 
     pages = 0
     found = 0
@@ -94,8 +94,8 @@ def pass_as_is():
         print(json.dumps(webannotation, ensure_ascii=False, indent=None))
 
 
-def get_target_ids(pagexml_path: str, canvas_data: dict[str, TargetIds]) -> dict[str, TargetIds]:
-    tree = etree.parse(pagexml_path)
+def get_target_ids(tei_path: str, canvas_data: dict[str, TargetIds]) -> dict[str, TargetIds]:
+    tree = etree.parse(tei_path)
     root = tree.getroot()
 
     image_labels = {}
