@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import os
 import sys
 from dataclasses import dataclass
 
@@ -42,6 +43,14 @@ def main():
                         help="the pageXML file",
                         required=True)
     args = parser.parse_args()
+
+    if not os.path.exists(args.manifest):
+        logger.error(f"The manifest file {args.manifest} does not exist.")
+        exit()
+
+    if not os.path.exists(args.pagexml):
+        logger.error(f"The pagexml file {args.manifest} does not exist.")
+        exit()
 
     canvas_data = read_canvas_data(args.manifest)
     target_ids = get_target_ids(args.pagexml, canvas_data)
