@@ -42,10 +42,13 @@ def main():
     parser.add_argument("--tei", action="store", type=str,
                         help="the TEI file",
                         required=True)
+    parser.add_argument("--ignore-missing-manifest", action="store_true",
+                        help="when the manifest is missing, just pass through the annotations as-is")
     args = parser.parse_args()
 
     if not os.path.exists(args.manifest):
-        logger.error(f"The manifest file {args.manifest} does not exist, cannot add targets.")
+        if not args.ignore_missing_manifest:
+            logger.error(f"The manifest file {args.manifest} does not exist, cannot add targets.")
         pass_as_is()
         exit(0)
 
@@ -90,8 +93,7 @@ def main():
 
 def pass_as_is():
     for line in sys.stdin:
-        webannotation = json.loads(line)
-        print(json.dumps(webannotation, ensure_ascii=False, indent=None))
+        print(line)
 
 
 def get_target_ids(tei_path: str, canvas_data: dict[str, TargetIds]) -> dict[str, TargetIds]:
@@ -143,3 +145,16 @@ def read_canvas_data(manifest_path: str) -> dict[str, TargetIds]:
 
 if __name__ == "__main__":
     main()
+
+# canvas_target_with_selector = {
+#     "@context": "https://ns.huc.knaw.nl/huc-di-tt.jsonld",
+#     "source": "https://israelsletters.org/files/israels/static/manifests/letters/ii001.json/canvas/israels/pages/b8564V2008_vs_b",
+#     "type": "Canvas",
+#     "selector": [
+#         {
+#             "@context": "http://iiif.io/api/annex/openannotation/context.json",
+#             "type": "iiif:ImageApiSelector",
+#             "region": "0,0,8272,6200"
+#         }
+#     ]
+# }
