@@ -7,7 +7,9 @@ from typing import Optional
 
 import progressbar
 from annorepo.client import AnnoRepoClient, ContainerAdapter
+
 from annorepo_tools.utils import chunk_list
+
 
 def get_etag(ca: ContainerAdapter) -> str:
     return ca.read().etag
@@ -24,7 +26,7 @@ def upload(
         api_key: Optional[str] = None,
         overwrite_container: bool = False,
         show_progress: bool = False,
-        glob_pattern = "*.json",
+        glob_pattern="*.json",
 ):
     ar = AnnoRepoClient(annorepo_base_url, verbose=False, api_key=api_key)
 
@@ -100,9 +102,10 @@ def process_web_annotations_file(
     print(f"reading {input_file}...")
     if input_file.endswith(".jsonl"):
         annotation_list = []
-        with open(input_file,'r',encoding='utf-8') as f:
+        with open(input_file, 'r', encoding='utf-8') as f:
             for line in f.readlines():
-                annotation_list.append(json.loads(line))
+                if len(line) > 0:
+                    annotation_list.append(json.loads(line))
     else:
         with open(input_file) as f:
             annotation_list = json.load(f)
@@ -128,7 +131,8 @@ def process_web_annotations_file(
         try:
             annotation_ids.extend(ar.add_annotations(container_id, chunk))
         except Exception as e:
-            print(f"Error {e} while uploading chunk #{p+1}/{number_of_chunks}: ", json.dumps(chunk,ensure_ascii=False), file=sys.stderr)
+            print(f"Error {e} while uploading chunk #{p + 1}/{number_of_chunks}: ",
+                  json.dumps(chunk, ensure_ascii=False), file=sys.stderr)
             raise
     print()
     out_path = "/".join(input_file.split("/")[:-1])

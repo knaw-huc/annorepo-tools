@@ -93,7 +93,7 @@ def main():
 
 def pass_as_is():
     for line in sys.stdin:
-        print(line)
+        print(line, end='')
 
 
 def get_target_ids(tei_path: str, canvas_data: dict[str, TargetIds]) -> dict[str, TargetIds]:
