@@ -100,13 +100,20 @@ def main():
     print(f"Added canvas targets for {found} of {pages} pages", file=sys.stderr)
 
 
-def percentage(percent: int, total: int) -> str:
-    return str(round((float(percent) / 100) * float(total)))
+def percentage(percent: int, total: int) -> int:
+    return round((float(percent) / 100) * float(total))
 
 
 def image_api_selector(ulx: int, uly: int, lrx: int, lry: int, width: int, height: int) -> dict[str, str]:
-    region = ",".join(
-        [percentage(ulx, width), percentage(uly, height), percentage(lrx, width), percentage(lry, height)])
+    ax1 = percentage(ulx, width)
+    ay1 = percentage(uly, height)
+    ax2 = percentage(lrx, width)
+    ay2 = percentage(lry, height)
+    x = str(ax1)
+    y = str(ay1)
+    w = str(ax2 - ax1)
+    h = str(ay2 - ay1)
+    region = ",".join([x, y, w, h])
     return {
         "@context": "http://iiif.io/api/annex/openannotation/context.json",
         "type": "iiif:ImageApiSelector",
@@ -175,8 +182,8 @@ def read_canvas_data(manifest_path: str) -> dict[str, TargetIds]:
         canvas_id = canvas["id"]
         label = LABEL_JPE.find(canvas)[0].value[0]
         image_id = IMAGE_ID_JPE.find(canvas)[0].value
-        width = HEIGHT_JPE.find(canvas)[0].value
-        height = WIDTH_JPE.find(canvas)[0].value
+        width = WIDTH_JPE.find(canvas)[0].value
+        height = HEIGHT_JPE.find(canvas)[0].value
         canvas_data[label] = TargetIds(canvas_id=canvas_id, image_id=image_id, width=width, height=height)
     return canvas_data
 
