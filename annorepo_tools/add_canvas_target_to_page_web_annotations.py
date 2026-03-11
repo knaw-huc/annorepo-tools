@@ -4,7 +4,8 @@ import argparse
 import json
 import os
 import sys
-from dataclasses import dataclass
+from copy import deepcopy
+from dataclasses import dataclass, field
 
 import jsonpath_ng
 from loguru import logger
@@ -16,6 +17,8 @@ TEI_NS = 'http://www.tei-c.org/ns/1.0'
 ITEMS_JPE = jsonpath_ng.parse("$.items[*]")
 LABEL_JPE = jsonpath_ng.parse("$.label.en")
 IMAGE_ID_JPE = jsonpath_ng.parse("$.items[*].items[*].body.id")
+HEIGHT_JPE = jsonpath_ng.parse("$.items[*].items[*].body.height")
+WIDTH_JPE = jsonpath_ng.parse("$.items[*].items[*].body.width")
 
 
 # ns = {
@@ -28,6 +31,9 @@ IMAGE_ID_JPE = jsonpath_ng.parse("$.items[*].items[*].body.id")
 class TargetIds:
     image_id: str
     canvas_id: str
+    width: int
+    height: int
+    selectors: list[dict[str, str]] = field(default_factory=list)
 
 
 @logger.catch()
@@ -73,11 +79,14 @@ def main():
                 pb_id = body['xml:id']
                 if pb_id in target_ids:
                     targets = target_ids[pb_id]
+                    canvas_target = {
+                        "type": "Canvas",
+                        "source": targets.canvas_id
+                    }
+                    if targets.selectors:
+                        canvas_target["selector"] = targets.selectors
                     new_targets = [
-                        {
-                            "type": "Canvas",
-                            "source": targets.canvas_id
-                        },
+                        canvas_target,
                         {
                             "type": "Image",
                             "source": targets.image_id
@@ -91,6 +100,20 @@ def main():
     print(f"Added canvas targets for {found} of {pages} pages", file=sys.stderr)
 
 
+def percentage(percent: int, total: int) -> str:
+    return str(round((float(percent) / 100) * float(total)))
+
+
+def image_api_selector(ulx: int, uly: int, lrx: int, lry: int, width: int, height: int) -> dict[str, str]:
+    region = ",".join(
+        [percentage(ulx, width), percentage(uly, height), percentage(lrx, width), percentage(lry, height)])
+    return {
+        "@context": "http://iiif.io/api/annex/openannotation/context.json",
+        "type": "iiif:ImageApiSelector",
+        "region": region
+    }
+
+
 def pass_as_is():
     for line in sys.stdin:
         print(line, end='')
@@ -99,8 +122,8 @@ def pass_as_is():
 def get_target_ids(tei_path: str, canvas_data: dict[str, TargetIds]) -> dict[str, TargetIds]:
     tree = etree.parse(tei_path)
     root = tree.getroot()
-
     image_labels = {}
+    zone_bounding_box = {}
     for surface in root.iter(f'{{{TEI_NS}}}surface'):
         surface_id = surface.get(XML_ID)
         graphic = surface.find(f'{{{TEI_NS}}}graphic')
@@ -112,15 +135,28 @@ def get_target_ids(tei_path: str, canvas_data: dict[str, TargetIds]) -> dict[str
         for zone in surface.iter(f'{{{TEI_NS}}}zone'):
             zone_id = zone.get(XML_ID)
             image_labels[zone_id] = url
+            ulx = zone.get('ulx')
+            uly = zone.get('uly')
+            lrx = zone.get('lrx')
+            lry = zone.get('lry')
+            if ulx:
+                zone_bounding_box[zone_id] = [int(ulx), int(uly), int(lrx), int(lry)]
 
     metadata = {}
     for page in root.iter(f'{{{TEI_NS}}}pb'):
         page_id = page.get(XML_ID)
         surface_id = page.get('facs')[1:]
         image_label = image_labels.get(surface_id)
+        bounding_box = zone_bounding_box.get(surface_id)
         if image_label:
             if image_label in canvas_data:
-                metadata[page_id] = canvas_data[image_label]
+                target_ids = deepcopy(canvas_data[image_label])
+                if bounding_box:
+                    selector = image_api_selector(*bounding_box, target_ids.width, target_ids.height)
+                    region = selector['region']
+                    target_ids.image_id = target_ids.image_id.replace("/full/", f"/{region}/")
+                    target_ids.selectors.append(selector)
+                metadata[page_id] = target_ids
             else:
                 logger.warning(
                     f"graphic url '{image_label}' in surface '{surface_id}' has no matching canvas in the manifest.")
@@ -139,22 +175,11 @@ def read_canvas_data(manifest_path: str) -> dict[str, TargetIds]:
         canvas_id = canvas["id"]
         label = LABEL_JPE.find(canvas)[0].value[0]
         image_id = IMAGE_ID_JPE.find(canvas)[0].value
-        canvas_data[label] = TargetIds(canvas_id=canvas_id, image_id=image_id)
+        width = HEIGHT_JPE.find(canvas)[0].value
+        height = WIDTH_JPE.find(canvas)[0].value
+        canvas_data[label] = TargetIds(canvas_id=canvas_id, image_id=image_id, width=width, height=height)
     return canvas_data
 
 
 if __name__ == "__main__":
     main()
-
-# canvas_target_with_selector = {
-#     "@context": "https://ns.huc.knaw.nl/huc-di-tt.jsonld",
-#     "source": "https://israelsletters.org/files/israels/static/manifests/letters/ii001.json/canvas/israels/pages/b8564V2008_vs_b",
-#     "type": "Canvas",
-#     "selector": [
-#         {
-#             "@context": "http://iiif.io/api/annex/openannotation/context.json",
-#             "type": "iiif:ImageApiSelector",
-#             "region": "0,0,8272,6200"
-#         }
-#     ]
-# }
