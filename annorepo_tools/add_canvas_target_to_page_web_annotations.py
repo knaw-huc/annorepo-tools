@@ -11,6 +11,8 @@ import jsonpath_ng
 from loguru import logger
 from lxml import etree
 
+import annorepo_tools.utils as u
+
 XML_ID = '{http://www.w3.org/XML/1998/namespace}id'
 TEI_NS = 'http://www.tei-c.org/ns/1.0'
 
@@ -100,27 +102,6 @@ def main():
     print(f"Added canvas targets for {found} of {pages} pages", file=sys.stderr)
 
 
-def percentage(percent: int, total: int) -> int:
-    return round((float(percent) / 100) * float(total))
-
-
-def image_api_selector(ulx: int, uly: int, lrx: int, lry: int, width: int, height: int) -> dict[str, str]:
-    ax1 = percentage(ulx, width)
-    ay1 = percentage(uly, height)
-    ax2 = percentage(lrx, width)
-    ay2 = percentage(lry, height)
-    x = str(ax1)
-    y = str(ay1)
-    w = str(ax2 - ax1)
-    h = str(ay2 - ay1)
-    region = ",".join([x, y, w, h])
-    return {
-        "@context": "http://iiif.io/api/annex/openannotation/context.json",
-        "type": "iiif:ImageApiSelector",
-        "region": region
-    }
-
-
 def pass_as_is():
     for line in sys.stdin:
         print(line, end='')
@@ -130,7 +111,8 @@ def get_target_ids(tei_path: str, canvas_data: dict[str, TargetIds]) -> dict[str
     tree = etree.parse(tei_path)
     root = tree.getroot()
     image_labels = {}
-    zone_bounding_box = {}
+    zone_ullr_box = {}
+    rotation = {}
     for surface in root.iter(f'{{{TEI_NS}}}surface'):
         surface_id = surface.get(XML_ID)
         graphic = surface.find(f'{{{TEI_NS}}}graphic')
@@ -147,22 +129,27 @@ def get_target_ids(tei_path: str, canvas_data: dict[str, TargetIds]) -> dict[str
             lrx = zone.get('lrx')
             lry = zone.get('lry')
             if ulx:
-                zone_bounding_box[zone_id] = [int(ulx), int(uly), int(lrx), int(lry)]
+                zone_ullr_box[zone_id] = [int(ulx), int(uly), int(lrx), int(lry)]
+            rotation_value = zone.get('rotation')
+            if rotation_value:
+                rotation[zone_id] = int(rotation_value)
 
     metadata = {}
     for page in root.iter(f'{{{TEI_NS}}}pb'):
         page_id = page.get(XML_ID)
         surface_id = page.get('facs')[1:]
         image_label = image_labels.get(surface_id)
-        bounding_box = zone_bounding_box.get(surface_id)
+        bounding_box = zone_ullr_box.get(surface_id)
+        zone_rotation = rotation.get(surface_id)
         if image_label:
             if image_label in canvas_data:
                 target_ids = deepcopy(canvas_data[image_label])
-                if bounding_box:
-                    selector = image_api_selector(*bounding_box, target_ids.width, target_ids.height)
-                    region = selector['region']
-                    target_ids.image_id = target_ids.image_id.replace("/full/", f"/{region}/")
-                    target_ids.selectors.append(selector)
+                region = u.calculate_xywh(ullr=bounding_box, width=target_ids.width, height=target_ids.height)
+                selector = u.image_api_selector(region, zone_rotation)
+                target_ids.selectors.append(selector)
+                adjusted_image_id = u.customize_iiif_image_url(original_url=target_ids.image_id, region=region,
+                                                               rotation=zone_rotation)
+                target_ids.image_id = adjusted_image_id
                 metadata[page_id] = target_ids
             else:
                 logger.warning(
