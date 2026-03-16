@@ -8,7 +8,7 @@ from typing import Optional
 import progressbar
 from annorepo.client import AnnoRepoClient, ContainerAdapter
 
-import utils as u
+import annorepo_tools.utils as u
 
 
 def get_etag(ca: ContainerAdapter) -> str:

@@ -12,7 +12,7 @@ from loguru import logger
 from lxml import etree
 from more_itertools import unique_everseen
 
-import utils as u
+import annorepo_tools.utils as u
 
 XML_ID = '{http://www.w3.org/XML/1998/namespace}id'
 TEI_NS = 'http://www.tei-c.org/ns/1.0'
