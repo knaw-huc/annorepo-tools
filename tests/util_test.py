@@ -71,10 +71,7 @@ class UtilTestCase(unittest.TestCase):
         self.assertEqual(selector, expectation)
 
     def test_image_api_selector_with_neither(self):
-        expectation = {
-            '@context': 'http://iiif.io/api/annex/openannotation/context.json',
-            'type': 'iiif:ImageApiSelector'
-        }
+        expectation = None
         selector = u.image_api_selector()
         self.assertEqual(selector, expectation)
 

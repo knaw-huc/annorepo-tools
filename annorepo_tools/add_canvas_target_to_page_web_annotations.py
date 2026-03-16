@@ -10,8 +10,9 @@ from dataclasses import dataclass, field
 import jsonpath_ng
 from loguru import logger
 from lxml import etree
+from more_itertools import unique_everseen
 
-import annorepo_tools.utils as u
+import utils as u
 
 XML_ID = '{http://www.w3.org/XML/1998/namespace}id'
 TEI_NS = 'http://www.tei-c.org/ns/1.0'
@@ -41,7 +42,7 @@ class TargetIds:
 @logger.catch()
 def main():
     parser = argparse.ArgumentParser(
-        description="Adds Canvas and Image targets to `Page` web annotations,"
+        description="Adds Canvas and Image targets to `Page` and `Letter` web annotations,"
                     " based on the manifest and the TEI file."
                     " Reads JSONL from standard input (one JSON-LD webannotation per line)")
     parser.add_argument("--manifest", action="store", type=str,
@@ -69,37 +70,51 @@ def main():
     target_ids = get_target_ids(args.tei, canvas_data)
 
     pages = 0
-    found = 0
+    pages_found = 0
+    letters_found = 0
     for line in sys.stdin:
         webannotation = json.loads(line)
         if 'body' not in webannotation:
             continue
         body = webannotation['body']
-        if 'type' in body and body['type'] == "Page":
-            pages += 1
-            if 'xml:id' in body:
-                pb_id = body['xml:id']
-                if pb_id in target_ids:
-                    targets = target_ids[pb_id]
+        if 'type' in body:
+            if body['type'] == "Letter":
+                letters_found += 1
+                new_targets = []
+                for t in target_ids.values():
                     canvas_target = {
                         "type": "Canvas",
-                        "source": targets.canvas_id
+                        "source": t.canvas_id
                     }
-                    if targets.selectors:
-                        canvas_target["selector"] = targets.selectors
-                    new_targets = [
-                        canvas_target,
-                        {
-                            "type": "Image",
-                            "source": targets.image_id
+                    if t.selectors:
+                        canvas_target["selector"] = t.selectors
+                    new_targets.append(canvas_target)
+                webannotation['target'] += unique_everseen(new_targets)
+            elif body['type'] == "Page":
+                pages += 1
+                if 'xml:id' in body:
+                    pb_id = body['xml:id']
+                    if pb_id in target_ids:
+                        targets = target_ids[pb_id]
+                        canvas_target = {
+                            "type": "Canvas",
+                            "source": targets.canvas_id
                         }
-                    ]
-                    if not isinstance(webannotation['target'], list):
-                        webannotation['target'] = [webannotation['target']]
-                    webannotation['target'] += new_targets
-                    found += 1
+                        if targets.selectors:
+                            canvas_target["selector"] = targets.selectors
+                        new_targets = [
+                            canvas_target,
+                            {
+                                "type": "Image",
+                                "source": targets.image_id
+                            }
+                        ]
+                        if not isinstance(webannotation['target'], list):
+                            webannotation['target'] = [webannotation['target']]
+                        webannotation['target'] += new_targets
+                        pages_found += 1
         print(json.dumps(webannotation, ensure_ascii=False, indent=None))
-    print(f"Added canvas targets for {found} of {pages} pages", file=sys.stderr)
+    print(f"Added canvas targets for {pages_found} of {pages} page(s) and {letters_found} letter(s)", file=sys.stderr)
 
 
 def pass_as_is():
@@ -146,7 +161,8 @@ def get_target_ids(tei_path: str, canvas_data: dict[str, TargetIds]) -> dict[str
                 target_ids = deepcopy(canvas_data[image_label])
                 region = u.calculate_xywh(ullr=bounding_box, width=target_ids.width, height=target_ids.height)
                 selector = u.image_api_selector(region, zone_rotation)
-                target_ids.selectors.append(selector)
+                if selector:
+                    target_ids.selectors.append(selector)
                 adjusted_image_id = u.customize_iiif_image_url(original_url=target_ids.image_id, region=region,
                                                                rotation=zone_rotation)
                 target_ids.image_id = adjusted_image_id

@@ -36,7 +36,7 @@ def calculate_xywh(ullr: Optional[list[int]], width: int, height: int) -> Option
     return ",".join([x, y, w, h])
 
 
-def image_api_selector(region: Optional[str] = None, rotation: Optional[int] = None) -> dict[str, Any]:
+def image_api_selector(region: Optional[str] = None, rotation: Optional[int] = None) -> Optional[dict[str, Any]]:
     selector = {
         "@context": "http://iiif.io/api/annex/openannotation/context.json",
         "type": "iiif:ImageApiSelector",
@@ -45,7 +45,9 @@ def image_api_selector(region: Optional[str] = None, rotation: Optional[int] = N
         selector["region"] = region
     if rotation:
         selector["rotation"] = rotation
-    return selector
+    if region or rotation:
+        return selector
+    return None
 
 
 def customize_iiif_image_url(original_url: str, region: Optional[str] = None, rotation: Optional[int] = None) -> str:
