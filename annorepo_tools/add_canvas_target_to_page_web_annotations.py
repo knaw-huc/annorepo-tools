@@ -89,7 +89,7 @@ def main():
                     if t.selectors:
                         canvas_target["selector"] = t.selectors
                     new_targets.append(canvas_target)
-                webannotation['target'] += unique_everseen(new_targets)
+                webannotation['target'] += unique_everseen(new_targets, key=tuple)
             elif body['type'] == "Page":
                 pages += 1
                 if 'xml:id' in body:
