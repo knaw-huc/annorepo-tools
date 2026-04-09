@@ -133,7 +133,8 @@ def get_target_ids(tei_path: str, canvas_data: dict[str, TargetIds]) -> dict[str
     for surface in root.iter(f'{{{TEI_NS}}}surface'):
         surface_id = surface.get(XML_ID)
         graphic = surface.find(f'{{{TEI_NS}}}graphic')
-        url = os.path.splitext(graphic.get('url'))[0]  # remove file extension
+        # url = os.path.splitext(graphic.get('url'))[0]  # remove file extension
+        url = graphic.get('url')
         if url:
             image_labels[surface_id] = url
         else:
