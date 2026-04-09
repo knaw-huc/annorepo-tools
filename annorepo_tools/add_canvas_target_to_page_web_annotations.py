@@ -113,6 +113,8 @@ def main():
                             webannotation['target'] = [webannotation['target']]
                         webannotation['target'] += new_targets
                         pages_found += 1
+                else:
+                    logger.error(f"missing xml:id in {body}")
         print(json.dumps(webannotation, ensure_ascii=False, indent=None))
     print(f"Added canvas targets for {pages_found} of {pages} page(s) and {letters_found} letter(s)", file=sys.stderr)
 
@@ -131,7 +133,7 @@ def get_target_ids(tei_path: str, canvas_data: dict[str, TargetIds]) -> dict[str
     for surface in root.iter(f'{{{TEI_NS}}}surface'):
         surface_id = surface.get(XML_ID)
         graphic = surface.find(f'{{{TEI_NS}}}graphic')
-        url = graphic.get('url')
+        url = os.path.splitext(graphic.get('url'))[0]  # remove file extension
         if url:
             image_labels[surface_id] = url
         else:
@@ -152,6 +154,8 @@ def get_target_ids(tei_path: str, canvas_data: dict[str, TargetIds]) -> dict[str
     metadata = {}
     for page in root.iter(f'{{{TEI_NS}}}pb'):
         page_id = page.get(XML_ID)
+        if not page_id:
+            logger.error(f"Missing xml:id in <pb>")
         surface_id = page.get('facs')[1:]
         image_label = image_labels.get(surface_id)
         bounding_box = zone_ullr_box.get(surface_id)
