@@ -139,6 +139,9 @@ def get_target_ids(tei_path: str, canvas_data: dict[str, TargetIds]) -> dict[str
             image_labels[surface_id] = url
         else:
             logger.warning(f"No graphic url found for surface_id '{surface_id}'")
+        rotation_value = surface.get('rotate')
+        if rotation_value:
+            rotation[surface_id] = int(rotation_value)
         for zone in surface.iter(f'{{{TEI_NS}}}zone'):
             zone_id = zone.get(XML_ID)
             image_labels[zone_id] = url
@@ -148,7 +151,7 @@ def get_target_ids(tei_path: str, canvas_data: dict[str, TargetIds]) -> dict[str
             lry = zone.get('lry')
             if ulx:
                 zone_ullr_box[zone_id] = [int(ulx), int(uly), int(lrx), int(lry)]
-            rotation_value = zone.get('rotation')
+            rotation_value = zone.get('rotate')
             if rotation_value:
                 rotation[zone_id] = int(rotation_value)
 
