@@ -45,7 +45,6 @@ def main():
     pictures_found = 0
     for line in sys.stdin:
         webannotation = json.loads(line)
-        ic(webannotation)
         if 'body' not in webannotation:
             continue
         body = webannotation['body']
