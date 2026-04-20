@@ -26,6 +26,7 @@ upload-web-annotations = "annorepo_tools.upload_web_annotations:main"
 consolidate-web-annotations = "annorepo_tools.consolidate_web_annotations:main"
 scans-to-web-annotations = "annorepo_tools.scans_to_web_annotations:main"
 add-canvas-target-to-page-web-annotations = "annorepo_tools.add_canvas_target_to_page_web_annotations:main"
+add-url-to-picture-web-annotations = "annorepo_tools.add_url_to_picture_web_annotations:main"
 
 [tool.setuptools]
 packages = [ "annorepo_tools" ]
@@ -36,4 +37,3 @@ dependencies = {file = ["requirements.txt"]}
 [build-system]
 requires = ["setuptools >= 62.6"]
 build-backend = "setuptools.build_meta"
-
