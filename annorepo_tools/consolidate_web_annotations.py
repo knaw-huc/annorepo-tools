@@ -42,13 +42,25 @@ def load_entities(path: str) -> dict[str, dict[str, Any]]:
         with open(data_path, "r", encoding="utf-8") as f:
             entity_index.update(json.load(f))
     for k, v in entity_index.items():
-        if "relation" in v and "ref" in v["relation"]:
-            original_ref = v["relation"]["ref"]
-            ref_key = original_ref.replace(".xml#", "/")
-            if ref_key in entity_index:
-                entity_index[k]["relation"]["ref"] = entity_index[ref_key]
-            else:
-                print(f"WARNING: {k.replace('/', '.xml#')}: no entity found for ref=\"{original_ref}\"",file=sys.stderr)
+        if "relation" in v:
+            if isinstance(v["relation"], list):
+                for i, rel in enumerate(v["relation"]):
+                    if "ref" in rel:
+                        original_ref = rel["ref"]
+                        ref_key = original_ref.replace(".xml#", "/")
+                        if ref_key in entity_index:
+                            entity_index[k]["relation"][i]["ref"] = entity_index[ref_key]
+                        else:
+                            print(f"WARNING: {k.replace('/', '.xml#')}: no entity found for ref=\"{original_ref}\"",
+                                  file=sys.stderr)
+
+            elif isinstance(v["relation"], dict) and "ref" in v["relation"]:
+                original_ref = v["relation"]["ref"]
+                ref_key = original_ref.replace(".xml#", "/")
+                if ref_key in entity_index:
+                    entity_index[k]["relation"]["ref"] = entity_index[ref_key]
+                else:
+                    print(f"WARNING: {k.replace('/', '.xml#')}: no entity found for ref=\"{original_ref}\"",file=sys.stderr)
         entity_index[k] = rename_entity_type_fields(v)
     return entity_index
 
@@ -81,11 +93,11 @@ def resolve_refs(data: dict[str,Any], entity_index: dict[str, dict[str, Any]]) -
         if key == "tei:ref" and isinstance(value, str):
             if ' ' in value:
                 data['tei:ref'] = []
-                for value in value.split(' '):
-                    value = value.strip()
-                    if value:
+                for v in value.split(' '):
+                    v = v.strip()
+                    if v:
                         entities += 1
-                        data['tei:ref'].append(ref_to_entity(entity_index, value))
+                        data['tei:ref'].append(ref_to_entity(entity_index, v))
             else:
                 entities += 1
                 data['tei:ref'] = ref_to_entity(entity_index, value)
