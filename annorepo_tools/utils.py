@@ -179,27 +179,30 @@ def extract_surface_info(root) -> tuple[dict[Any, Any], dict[Any, Any], dict[Any
     for surface in root.iter(f'{{{TEI_NS}}}surface'):
         surface_id = surface.get(XML_ID)
         graphic = surface.find(f'{{{TEI_NS}}}graphic')
-        # url = os.path.splitext(graphic.get('url'))[0]  # remove file extension
-        url = graphic.get('url')
-        if url:
-            image_labels[surface_id] = url
-        else:
-            logger.warning(f"No graphic url found for surface_id '{surface_id}'")
-        rotation_value = surface.get('rotate')
-        if rotation_value:
-            rotation[surface_id] = int(rotation_value)
-        for zone in surface.iter(f'{{{TEI_NS}}}zone'):
-            zone_id = zone.get(XML_ID)
-            image_labels[zone_id] = url
-            ulx = zone.get('ulx')
-            uly = zone.get('uly')
-            lrx = zone.get('lrx')
-            lry = zone.get('lry')
-            if ulx:
-                zone_ullr_box[zone_id] = [float(ulx), float(uly), float(lrx), float(lry)]
-            rotation_value = zone.get('rotate')
+        if graphic:
+            # url = os.path.splitext(graphic.get('url'))[0]  # remove file extension
+            url = graphic.get('url')
+            if url:
+                image_labels[surface_id] = url
+            else:
+                logger.warning(f"No graphic url found for surface_id '{surface_id}'")
+            rotation_value = surface.get('rotate')
             if rotation_value:
-                rotation[zone_id] = int(rotation_value)
+                rotation[surface_id] = int(rotation_value)
+            for zone in surface.iter(f'{{{TEI_NS}}}zone'):
+                zone_id = zone.get(XML_ID)
+                image_labels[zone_id] = url
+                ulx = zone.get('ulx')
+                uly = zone.get('uly')
+                lrx = zone.get('lrx')
+                lry = zone.get('lry')
+                if ulx:
+                    zone_ullr_box[zone_id] = [float(ulx), float(uly), float(lrx), float(lry)]
+                rotation_value = zone.get('rotate')
+                if rotation_value:
+                    rotation[zone_id] = int(rotation_value)
+        else:
+            logger.warning(f"No graphic found for surface_id '{surface_id}'")
     return image_labels, rotation, zone_ullr_box
 
 
