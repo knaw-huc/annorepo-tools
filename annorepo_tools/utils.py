@@ -112,7 +112,11 @@ def get_page_target_ids(tei_path: str, canvas_data: dict[str, TargetIds]) -> dic
         page_id = page.get(XML_ID)
         if not page_id:
             logger.error(f"Missing xml:id in <pb>")
-        surface_id = page.get('facs')[1:]
+        try:
+            surface_id = page.get('facs')[1:]
+        except:
+            logger.error(f"Missing facs in <pb>, can't extract surface id")
+            continue
         image_label = image_labels.get(surface_id)
         bounding_box = zone_ullr_box.get(surface_id)
         zone_rotation = rotation.get(surface_id)
