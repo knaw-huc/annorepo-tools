@@ -8,7 +8,7 @@ from typing import Any, List, Optional
 import jsonpath_ng
 from loguru import logger
 from lxml import etree
-
+from icecream import ic
 
 def trim_trailing_slash(url: str):
     if url.endswith('/'):
@@ -110,7 +110,7 @@ def get_page_target_ids(tei_path: str, canvas_data: dict[str, TargetIds]) -> dic
     metadata = {}
     for page in root.iter(f'{{{TEI_NS}}}pb'):
         page_id = page.get(XML_ID)
-        if page_id:
+        if not page_id:
             logger.error("Missing xml:id in <pb>")
         try:
             surface_id = page.get('facs')[1:]
