@@ -110,7 +110,7 @@ def get_page_target_ids(tei_path: str, canvas_data: dict[str, TargetIds]) -> dic
     metadata = {}
     for page in root.iter(f'{{{TEI_NS}}}pb'):
         page_id = page.get(XML_ID)
-        if not page_id:
+        if page_id:
             logger.error("Missing xml:id in <pb>")
         try:
             surface_id = page.get('facs')[1:]
@@ -120,7 +120,7 @@ def get_page_target_ids(tei_path: str, canvas_data: dict[str, TargetIds]) -> dic
         image_label = image_labels.get(surface_id)
         bounding_box = zone_ullr_box.get(surface_id)
         zone_rotation = rotation.get(surface_id)
-        if image_label:
+        if image_label is not None:
             if image_label in canvas_data:
                 target_ids = deepcopy(canvas_data[image_label])
                 region = calculate_xywh(ullr=bounding_box, width=target_ids.width, height=target_ids.height)
@@ -147,7 +147,7 @@ def get_figure_target_ids(tei_path: str, canvas_data: dict[str, TargetIds]) -> d
     metadata = {}
     for figure in root.iter(f'{{{TEI_NS}}}figure'):
         figure_id = figure.get(XML_ID)
-        if not figure_id:
+        if figure_id is not None:
             logger.error(f"Missing xml:id in <figure>")
         if "facs" in figure.attrib:
             surface_id = figure.get('facs')[1:]
@@ -157,7 +157,7 @@ def get_figure_target_ids(tei_path: str, canvas_data: dict[str, TargetIds]) -> d
         image_label = image_labels.get(surface_id)
         bounding_box = zone_ullr_box.get(surface_id)
         zone_rotation = rotation.get(surface_id)
-        if image_label:
+        if image_label is not None:
             if image_label in canvas_data:
                 target_ids = deepcopy(canvas_data[image_label])
                 region = calculate_xywh(ullr=bounding_box, width=target_ids.width, height=target_ids.height)
@@ -183,7 +183,7 @@ def extract_surface_info(root) -> tuple[dict[Any, Any], dict[Any, Any], dict[Any
     for surface in root.iter(f'{{{TEI_NS}}}surface'):
         surface_id = surface.get(XML_ID)
         graphic = surface.find(f'{{{TEI_NS}}}graphic')
-        if graphic:
+        if graphic is not None:
             # url = os.path.splitext(graphic.get('url'))[0]  # remove file extension
             url = graphic.get('url')
             if url:
