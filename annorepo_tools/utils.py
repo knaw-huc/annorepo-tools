@@ -147,7 +147,7 @@ def get_figure_target_ids(tei_path: str, canvas_data: dict[str, TargetIds]) -> d
     metadata = {}
     for figure in root.iter(f'{{{TEI_NS}}}figure'):
         figure_id = figure.get(XML_ID)
-        if figure_id is not None:
+        if figure_id is None:
             logger.error(f"Missing xml:id in <figure>")
         if "facs" in figure.attrib:
             surface_id = figure.get('facs')[1:]
