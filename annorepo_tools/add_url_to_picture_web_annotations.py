@@ -55,6 +55,8 @@ def main():
                 if figure_id in target_ids:
                     t = target_ids[figure_id]
                     body['url'] = t.image_id
+                    body['width'] = t.width
+                    body['height'] = t.height
                     pictures_found += 1
                 else:
                     ic(target_ids)
