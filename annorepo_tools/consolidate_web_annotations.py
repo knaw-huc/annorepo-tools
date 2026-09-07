@@ -17,6 +17,9 @@ from typing import Optional, Any
 def set_target_type(webannotation: dict, target_type: str, length: Optional[int] = None) -> dict:
     if isinstance(webannotation['target'], list):
         for i, target in enumerate(webannotation['target']):
+            if 'selector' in webannotation['target'][i] and webannotation['target'][i]['selector'].get('type') != "TextPositionSelector":
+                #ignore all non TextPositionSelector (like the XPathSelector)
+                continue
             if length is not None and i >= length:
                 break
             if isinstance(target, str):
@@ -209,7 +212,8 @@ def main():
                         })
                 elif isinstance(target, dict) and 'selector' in target and target not in webannotation['target']:
                     newtarget = deepcopy(target)
-                    newtarget['type'] = args.new_type
+                    if target['selector']['type'] == "TextPositionSelector": #only act on TextPositionSelector, leave others as is
+                        newtarget['type'] = args.new_type
                     webannotation['target'].append(newtarget)
 
             # what was there before will be original text
