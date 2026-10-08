@@ -25,6 +25,7 @@ def main():
                         required=True)
     parser.add_argument("--ignore-missing-manifest", action="store_true",
                         help="when the manifest is missing, just pass through the annotations as-is")
+    # parser.add_argument('-s', '--sizes', help="Illustration sizes file", type=str, required=True)
     args = parser.parse_args()
 
     if not os.path.exists(args.manifest):
@@ -38,6 +39,12 @@ def main():
         u.pass_as_is()
         exit(0)
 
+    # if not os.path.exists(args.sizes):
+    #     logger.error(f"The illustration sizez file {args.sizes} does not exist, cannot add targets.")
+    #     u.pass_as_is()
+    #     exit(0)
+
+    # illustration_dimensions = u.read_illustration_dimensions(args.sizes)
     canvas_data = u.read_canvas_data(args.manifest)
     target_ids = u.get_figure_target_ids(args.tei, canvas_data)
 

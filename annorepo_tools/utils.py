@@ -1,3 +1,4 @@
+# import csv
 import json
 import sys
 from copy import deepcopy
@@ -8,7 +9,7 @@ from typing import Any, List, Optional
 import jsonpath_ng
 from loguru import logger
 from lxml import etree
-from icecream import ic
+
 
 def trim_trailing_slash(url: str):
     if url.endswith('/'):
@@ -77,6 +78,12 @@ HEIGHT_JPE = jsonpath_ng.parse("$.items[*].items[*].body.height")
 WIDTH_JPE = jsonpath_ng.parse("$.items[*].items[*].body.width")
 
 
+# @dataclass
+# class ImageDimensions:
+#     width: int
+#     height: int
+
+
 @dataclass
 class TargetIds:
     image_id: str
@@ -102,16 +109,21 @@ def read_canvas_data(manifest_path: str) -> dict[str, TargetIds]:
     return canvas_data
 
 
+def default_page_id(idx: int) -> str:
+    return f"default_page_id_{idx}"
+
+
 def get_page_target_ids(tei_path: str, canvas_data: dict[str, TargetIds]) -> dict[str, TargetIds]:
     tree = etree.parse(tei_path)
     root = tree.getroot()
     image_labels, rotation, zone_ullr_box = extract_surface_info(root)
 
     metadata = {}
-    for page in root.iter(f'{{{TEI_NS}}}pb'):
+    for i, page in enumerate(root.iter(f'{{{TEI_NS}}}pb')):
         page_id = page.get(XML_ID)
         if not page_id:
-            logger.error("Missing xml:id in <pb>")
+            page_id = default_page_id(i + 1)
+            # logger.warning("Missing xml:id in <pb>")
         try:
             surface_id = page.get('facs')[1:]
         except:
@@ -213,3 +225,10 @@ def extract_surface_info(root) -> tuple[dict[Any, Any], dict[Any, Any], dict[Any
 def pass_as_is():
     for line in sys.stdin:
         print(line, end='')
+
+# def read_illustration_dimensions(path: str) -> dict[str, ImageDimensions]:
+#     illustration_dimensions: dict[str, ImageDimensions] = {}
+#     with open(path, encoding='utf8') as f:
+#         for record in csv.DictReader(f, delimiter='\t', quoting=csv.QUOTE_NONE):
+#             illustration_dimensions[record["file"]] = ImageDimensions(int(record["width"]), int(record["height"]))
+#     return illustration_dimensions

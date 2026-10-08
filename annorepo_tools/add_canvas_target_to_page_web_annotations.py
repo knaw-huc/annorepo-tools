@@ -66,27 +66,30 @@ def main():
                 pages += 1
                 if 'xml:id' in body:
                     pb_id = body['xml:id']
-                    if pb_id in target_ids:
-                        targets = target_ids[pb_id]
-                        canvas_target = {
-                            "type": "Canvas",
-                            "source": targets.canvas_id
-                        }
-                        if targets.selectors:
-                            canvas_target["selector"] = targets.selectors
-                        new_targets = [
-                            canvas_target,
-                            {
-                                "type": "Image",
-                                "source": targets.image_id
-                            }
-                        ]
-                        if not isinstance(webannotation['target'], list):
-                            webannotation['target'] = [webannotation['target']]
-                        webannotation['target'] += new_targets
-                        pages_found += 1
                 else:
-                    logger.error(f"missing xml:id in {body}")
+                    pb_id = u.default_page_id(pages)
+
+                if pb_id in target_ids:
+                    targets = target_ids[pb_id]
+                    canvas_target = {
+                        "type": "Canvas",
+                        "source": targets.canvas_id
+                    }
+                    if targets.selectors:
+                        canvas_target["selector"] = targets.selectors
+                    new_targets = [
+                        canvas_target,
+                        {
+                            "type": "Image",
+                            "source": targets.image_id
+                        }
+                    ]
+                    if not isinstance(webannotation['target'], list):
+                        webannotation['target'] = [webannotation['target']]
+                    webannotation['target'] += new_targets
+                    pages_found += 1
+                # else:
+                #     logger.error(f"missing xml:id in {body}")
         print(json.dumps(webannotation, ensure_ascii=False, indent=None))
     print(f"Added canvas targets for {pages_found} of {pages} page(s) and {letters_found} letter(s)", file=sys.stderr)
 
